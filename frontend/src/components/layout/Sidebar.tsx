@@ -14,7 +14,9 @@ import ReceiptLongIcon from "@mui/icons-material/ReceiptLong";
 import AssessmentIcon from "@mui/icons-material/Assessment";
 
 interface SidebarProps {
-    onNavigate?: () => void;
+    onNavigate?: (
+        page: "dashboard" | "transactions"
+    ) => void;
 }
 
 export default function Sidebar({
@@ -68,6 +70,11 @@ export default function Sidebar({
 
             <List sx={{ px: 1.5, py: 2 }}>
                 <ListItemButton
+                    onClick={() =>
+                        onNavigate?.("dashboard")
+                    }
+                ></ListItemButton>
+                <ListItemButton
                     selected
                     onClick={onNavigate}
                     sx={{
@@ -99,6 +106,11 @@ export default function Sidebar({
 
                     <ListItemText primary="Transactions" />
                 </ListItemButton>
+                <ListItemButton
+                    onClick={() =>
+                        onNavigate?.("transactions")
+                    }
+                ></ListItemButton>
 
                 <ListItemButton
                     onClick={onNavigate}

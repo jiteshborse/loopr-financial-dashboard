@@ -13,6 +13,7 @@ import Header from "./Header";
 interface AppShellProps {
     children: ReactNode;
     onLogout: () => void;
+    onNavigate: (page: "dashboard" | "transactions") => void;
 }
 
 const DRAWER_WIDTH = 240;
@@ -55,7 +56,9 @@ export default function AppShell({
                         },
                     }}
                 >
-                    <Sidebar onNavigate={handleDrawerToggle} />
+                    <Sidebar
+                        onNavigate={onNavigate}
+                    />
                 </Drawer>
             ) : (
                 <Drawer
@@ -89,7 +92,7 @@ export default function AppShell({
                     onLogout={onLogout}
                 />
 
-                
+
 
                 {children}
             </Box>

@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 
 import LoginPage from "./features/auth/LoginPage";
 import DashboardPage from "./features/dashboard/DashboardPage";
+import TransactionsPage from "./features/transactions/TransactionsPage";
+
 import {
   getCurrentUser,
   logout,
@@ -10,9 +12,16 @@ import {
 import AppShell from "./components/layout/AppShell";
 import LoadingState from "./components/common/LoadingState";
 
+type Page =
+  | "dashboard"
+  | "transactions";
+
 function App() {
   const [authenticated, setAuthenticated] =
     useState<boolean | null>(null);
+
+  const [page, setPage] =
+    useState<Page>("dashboard");
 
   useEffect(() => {
     async function checkAuthentication() {
@@ -32,6 +41,7 @@ function App() {
       await logout();
     } finally {
       setAuthenticated(false);
+      setPage("dashboard");
     }
   }
 
@@ -42,14 +52,25 @@ function App() {
   if (!authenticated) {
     return (
       <LoginPage
-        onLogin={() => setAuthenticated(true)}
+        onLogin={() =>
+          setAuthenticated(true)
+        }
       />
     );
   }
 
   return (
-    <AppShell onLogout={handleLogout}>
-      <DashboardPage />
+    <AppShell
+      onLogout={handleLogout}
+      onNavigate={setPage}
+    >
+      {page === "dashboard" && (
+        <DashboardPage />
+      )}
+
+      {page === "transactions" && (
+        <TransactionsPage />
+      )}
     </AppShell>
   );
 }
