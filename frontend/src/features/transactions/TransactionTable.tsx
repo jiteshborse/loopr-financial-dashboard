@@ -1,5 +1,4 @@
 import {
-    Chip,
     Paper,
     Table,
     TableBody,
@@ -13,6 +12,8 @@ import {
 
 import type { Transaction } from "../../types/transaction";
 import { formatCurrency } from "../../utils/currency";
+import StatusChip from "../../components/common/StatusChip";
+import CategoryChip from "../../components/common/CategoryChip";
 
 interface TransactionTableProps {
     transactions: Transaction[];
@@ -60,7 +61,7 @@ export default function TransactionTable({
                                         onSort(column.key)
                                     }
                                 >
-                                    <Typography fontWeight={700}>
+                                    <Typography sx={{ fontWeight: 700 }}>
                                         {column.label}
                                     </Typography>
                                 </TableSortLabel>
@@ -92,9 +93,8 @@ export default function TransactionTable({
                             </TableCell>
 
                             <TableCell>
-                                <Chip
-                                    label={transaction.category}
-                                    size="small"
+                                <CategoryChip
+                                    category={transaction.category}
                                 />
                             </TableCell>
 

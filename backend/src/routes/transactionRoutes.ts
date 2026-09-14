@@ -1,10 +1,11 @@
-import { Router, Request, Response } from "express";
+import { Router } from "express";
+import type { Request, Response } from "express";
 import Transaction from "../models/Transaction";
 import { requireAuth } from "../middleware/authMiddleware";
 import {
   buildTransactionFilter,
   getSort,
-  TransactionQuery,
+  type TransactionQuery,
 } from "../utils/transactionFilters";
 
 const router = Router();
@@ -37,8 +38,13 @@ router.get("/", requireAuth, async (req: Request, res: Response) => {
 
     const totalPages = Math.ceil(total / pageSize);
 
+    const formattedTransactions = transactions.map((tx) => ({
+      ...tx,
+      amount: (tx.amount as any)?.toString() ?? "0.00",
+    }));
+
     res.json({
-      data: transactions,
+      data: formattedTransactions,
       meta: {
         page,
         pageSize,

@@ -18,6 +18,7 @@ export class ApiError extends Error {
 
 interface ApiErrorResponse {
     message?: string;
+    error?: string;
 }
 
 async function request<T>(
@@ -50,8 +51,10 @@ async function request<T>(
         .catch(() => ({}))) as T | ApiErrorResponse;
 
     if (!response.ok) {
+        const errorData = data as ApiErrorResponse;
         const message =
-            (data as ApiErrorResponse).message ??
+            errorData.message ??
+            errorData.error ??
             "Something went wrong.";
 
         throw new ApiError(

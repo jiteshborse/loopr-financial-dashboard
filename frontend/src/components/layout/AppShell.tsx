@@ -1,26 +1,31 @@
-import { ReactNode, useState } from "react";
+import { useState, type ReactNode } from "react";
 import {
     Box,
     Drawer,
     useMediaQuery,
     useTheme,
 } from "@mui/material";
-// import MenuIcon from "@mui/icons-material/Menu";
 
 import Sidebar from "./Sidebar";
 import Header from "./Header";
+import type { AuthUser } from "../../types/auth";
 
 interface AppShellProps {
     children: ReactNode;
+    user: AuthUser | null;
+    currentPage?: "dashboard" | "transactions";
     onLogout: () => void;
     onNavigate: (page: "dashboard" | "transactions") => void;
 }
 
-const DRAWER_WIDTH = 240;
+const DRAWER_WIDTH = 250;
 
 export default function AppShell({
     children,
+    user,
+    currentPage = "dashboard",
     onLogout,
+    onNavigate,
 }: AppShellProps) {
     const theme = useTheme();
 
@@ -34,12 +39,17 @@ export default function AppShell({
         setMobileOpen((open) => !open);
     };
 
+    const handleMobileNavigate = (page: "dashboard" | "transactions") => {
+        onNavigate(page);
+        setMobileOpen(false);
+    };
+
     return (
         <Box
             sx={{
                 display: "flex",
                 minHeight: "100vh",
-                backgroundColor: "#0b0f14",
+                backgroundColor: "#080c14",
             }}
         >
             {isMobile ? (
@@ -53,11 +63,15 @@ export default function AppShell({
                     sx={{
                         "& .MuiDrawer-paper": {
                             width: DRAWER_WIDTH,
+                            backgroundColor: "#0d131f",
+                            borderRight: "1px solid rgba(255, 255, 255, 0.08)",
                         },
                     }}
                 >
                     <Sidebar
-                        onNavigate={onNavigate}
+                        user={user}
+                        currentPage={currentPage}
+                        onNavigate={handleMobileNavigate}
                     />
                 </Drawer>
             ) : (
@@ -67,14 +81,19 @@ export default function AppShell({
                     sx={{
                         width: DRAWER_WIDTH,
                         flexShrink: 0,
-
                         "& .MuiDrawer-paper": {
                             width: DRAWER_WIDTH,
                             boxSizing: "border-box",
+                            backgroundColor: "#0d131f",
+                            borderRight: "1px solid rgba(255, 255, 255, 0.08)",
                         },
                     }}
                 >
-                    <Sidebar />
+                    <Sidebar
+                        user={user}
+                        currentPage={currentPage}
+                        onNavigate={onNavigate}
+                    />
                 </Drawer>
             )}
 
@@ -83,16 +102,16 @@ export default function AppShell({
                 sx={{
                     flexGrow: 1,
                     minWidth: 0,
+                    backgroundColor: "#080c14",
                 }}
             >
                 <Header
+                    user={user}
                     onMenuClick={
                         isMobile ? handleDrawerToggle : undefined
                     }
                     onLogout={onLogout}
                 />
-
-
 
                 {children}
             </Box>

@@ -45,6 +45,13 @@ const transactionSchema = new Schema(
   }
 );
 
+// Performance compound indexes for sorting and filtering
+transactionSchema.index({ category: 1, date: -1 });
+transactionSchema.index({ status: 1, date: -1 });
+transactionSchema.index({ user_id: 1, date: -1 });
+transactionSchema.index({ date: -1, _id: 1 });
+
 export type TransactionDocument = InferSchemaType<typeof transactionSchema>;
 
 export const Transaction = model("Transaction", transactionSchema);
+export default Transaction;

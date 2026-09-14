@@ -24,9 +24,10 @@ export const requireAuth: RequestHandler = (
         const token = req.cookies?.accessToken;
 
         if (!token) {
-            return res.status(401).json({
+            res.status(401).json({
                 error: "Authentication required."
             });
+            return;
         }
 
         const payload = verifyAccessToken(token);
@@ -38,8 +39,9 @@ export const requireAuth: RequestHandler = (
 
         next();
     } catch {
-        return res.status(401).json({
+        res.status(401).json({
             error: "Invalid or expired authentication token."
         });
+        return;
     }
-}
+};

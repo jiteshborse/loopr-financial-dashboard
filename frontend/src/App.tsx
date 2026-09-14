@@ -11,28 +11,27 @@ import {
 
 import AppShell from "./components/layout/AppShell";
 import LoadingState from "./components/common/LoadingState";
+import type { AuthUser } from "./types/auth";
 
-type Page =
-  | "dashboard"
-  | "transactions";
+type Page = "dashboard" | "transactions";
 
 function App() {
-  const [authenticated, setAuthenticated] =
-    useState<boolean | null>(null);
+  const [authenticated, setAuthenticated] = useState<boolean | null>(null);
+  const [user, setUser] = useState<AuthUser | null>(null);
+  const [page, setPage] = useState<Page>("dashboard");
 
-  const [page, setPage] =
-    useState<Page>("dashboard");
+  async function checkAuthentication() {
+    try {
+      const currentUser = await getCurrentUser();
+      setUser(currentUser);
+      setAuthenticated(true);
+    } catch {
+      setUser(null);
+      setAuthenticated(false);
+    }
+  }
 
   useEffect(() => {
-    async function checkAuthentication() {
-      try {
-        await getCurrentUser();
-        setAuthenticated(true);
-      } catch {
-        setAuthenticated(false);
-      }
-    }
-
     checkAuthentication();
   }, []);
 
@@ -40,9 +39,14 @@ function App() {
     try {
       await logout();
     } finally {
+      setUser(null);
       setAuthenticated(false);
       setPage("dashboard");
     }
+  }
+
+  async function handleLoginSuccess() {
+    await checkAuthentication();
   }
 
   if (authenticated === null) {
@@ -50,27 +54,18 @@ function App() {
   }
 
   if (!authenticated) {
-    return (
-      <LoginPage
-        onLogin={() =>
-          setAuthenticated(true)
-        }
-      />
-    );
+    return <LoginPage onLogin={handleLoginSuccess} />;
   }
 
   return (
     <AppShell
+      user={user}
+      currentPage={page}
       onLogout={handleLogout}
       onNavigate={setPage}
     >
-      {page === "dashboard" && (
-        <DashboardPage />
-      )}
-
-      {page === "transactions" && (
-        <TransactionsPage />
-      )}
+      {page === "dashboard" && <DashboardPage user={user} />}
+      {page === "transactions" && <TransactionsPage />}
     </AppShell>
   );
 }

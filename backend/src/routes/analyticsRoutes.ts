@@ -1,9 +1,10 @@
-import { Router, Request, Response } from "express";
+import { Router } from "express";
+import type { Request, Response } from "express";
 import Transaction from "../models/Transaction";
 import { requireAuth } from "../middleware/authMiddleware";
 import {
     buildTransactionFilter,
-    TransactionQuery,
+    type TransactionQuery,
 } from "../utils/transactionFilters";
 
 const router = Router();
@@ -170,7 +171,7 @@ router.get("/trends", requireAuth, async (req: Request, res: Response) => {
         ]);
 
         res.json({
-            data: data.map((item) => ({
+            data: data.map((item: any) => ({
                 month: item.month,
                 revenue: item.revenue.toString(),
                 expenses: item.expenses.toString(),

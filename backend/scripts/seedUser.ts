@@ -9,15 +9,22 @@ async function seedUser() {
 
         const email = "analyst@loopr.dev";
         const password = "Loopr@12345";
+        const name = "Jitesh Borse";
+        const location = "Pune, Maharashtra";
+        const title = "Senior Financial Analyst";
 
         const passwordHash = await bcrypt.hash(password, 12);
 
         await User.findOneAndUpdate(
             { email },
             {
+                name,
                 email,
                 passwordHash,
-                role: "analyst"
+                role: "analyst",
+                location,
+                title,
+                lastLogin: new Date(),
             },
             {
                 upsert: true,
@@ -26,9 +33,11 @@ async function seedUser() {
             }
         );
 
-        console.log("Demo analyst user created/updated.");
+        console.log("Demo analyst user created/updated with profile details.");
+        console.log(`Name: ${name}`);
         console.log(`Email: ${email}`);
-        console.log(`Password: ${password}`);
+        console.log(`Location: ${location}`);
+        console.log(`Title: ${title}`);
     } catch (error) {
         console.error("User seed failed:", error);
         process.exitCode = 1;

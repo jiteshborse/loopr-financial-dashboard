@@ -2,6 +2,12 @@ import { Schema, model, type InferSchemaType } from "mongoose";
 
 const userSchema = new Schema(
     {
+        name: {
+            type: String,
+            required: true,
+            default: "Jitesh Borse",
+            trim: true
+        },
         email: {
             type: String,
             required: true,
@@ -18,6 +24,20 @@ const userSchema = new Schema(
             type: String,
             enum: ["analyst"],
             default: "analyst"
+        },
+        location: {
+            type: String,
+            default: "Pune, Maharashtra",
+            trim: true
+        },
+        title: {
+            type: String,
+            default: "Senior Financial Analyst",
+            trim: true
+        },
+        lastLogin: {
+            type: Date,
+            default: Date.now
         }
     },
     {
@@ -29,3 +49,4 @@ const userSchema = new Schema(
 export type UserDocument = InferSchemaType<typeof userSchema>;
 
 export const User = model("User", userSchema);
+export default User;

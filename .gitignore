@@ -1,5 +1,32 @@
+# Dependencies
 node_modules/
+.pnp
+.pnp.js
+
+# Production Builds
 dist/
+build/
+
+# Environment Configurations
 .env
+.env.local
+.env.*.local
 .env.*
 !.env.example
+
+# Logs & Debugging
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+*.log
+
+# OS & Editor Files
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?

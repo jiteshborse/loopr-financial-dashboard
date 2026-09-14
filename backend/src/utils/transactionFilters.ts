@@ -1,5 +1,6 @@
-import { FilterQuery } from "mongoose";
-import { TransactionDocument } from "../models/Transaction";
+import mongoose from "mongoose";
+import type { QueryFilter } from "mongoose";
+import type { TransactionDocument } from "../models/Transaction";
 
 export interface TransactionQuery {
     search?: string;
@@ -18,19 +19,20 @@ export interface TransactionQuery {
 
 export function buildTransactionFilter(
     query: TransactionQuery
-): FilterQuery<TransactionDocument> {
-    const filter: FilterQuery<TransactionDocument> = {};
+): QueryFilter<TransactionDocument> {
+    const filter: Record<string, unknown> = {};
 
-    if (query.search) {
-        const searchRegex = new RegExp(query.search, "i");
+    if (query.search && typeof query.search === "string" && query.search.trim()) {
+        const sanitizedSearch = query.search.trim().replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+        const searchRegex = new RegExp(sanitizedSearch, "i");
 
-        const searchConditions: FilterQuery<TransactionDocument>[] = [
+        const searchConditions: Record<string, unknown>[] = [
             { user_id: searchRegex },
             { category: searchRegex },
             { status: searchRegex },
         ];
 
-        const numericSearch = Number(query.search);
+        const numericSearch = Number(query.search.trim());
 
         if (!Number.isNaN(numericSearch)) {
             searchConditions.push({ id: numericSearch });
@@ -40,48 +42,65 @@ export function buildTransactionFilter(
     }
 
     if (query.dateFrom || query.dateTo) {
-        filter.date = {};
+        const dateFilter: Record<string, unknown> = {};
 
         if (query.dateFrom) {
-            filter.date.$gte = new Date(query.dateFrom);
+            const dateFrom = new Date(query.dateFrom);
+            if (!Number.isNaN(dateFrom.getTime())) {
+                dateFilter.$gte = dateFrom;
+            }
         }
 
         if (query.dateTo) {
             const dateTo = new Date(query.dateTo);
-
-            if (query.dateTo.length === 10) {
-                dateTo.setUTCHours(23, 59, 59, 999);
+            if (!Number.isNaN(dateTo.getTime())) {
+                if (query.dateTo.length === 10) {
+                    dateTo.setUTCHours(23, 59, 59, 999);
+                }
+                dateFilter.$lte = dateTo;
             }
+        }
 
-            filter.date.$lte = dateTo;
+        if (Object.keys(dateFilter).length > 0) {
+            filter.date = dateFilter;
         }
     }
 
     if (query.minAmount || query.maxAmount) {
-        filter.amount = {};
+        const amountFilter: Record<string, unknown> = {};
 
-        if (query.minAmount) {
-            filter.amount.$gte = query.minAmount;
+        if (query.minAmount && !Number.isNaN(Number(query.minAmount))) {
+            const val = Number(query.minAmount);
+            if (val >= 0) {
+                amountFilter.$gte = mongoose.Types.Decimal128.fromString(val.toFixed(2));
+            }
         }
 
-        if (query.maxAmount) {
-            filter.amount.$lte = query.maxAmount;
+        if (query.maxAmount && !Number.isNaN(Number(query.maxAmount))) {
+            const val = Number(query.maxAmount);
+            if (val >= 0) {
+                amountFilter.$lte = mongoose.Types.Decimal128.fromString(val.toFixed(2));
+            }
+        }
+
+        if (Object.keys(amountFilter).length > 0) {
+            filter.amount = amountFilter;
         }
     }
 
-    if (query.category) {
+    if (query.category && ["Revenue", "Expense"].includes(query.category)) {
         filter.category = query.category;
     }
 
-    if (query.status) {
+    if (query.status && ["Paid", "Pending"].includes(query.status)) {
         filter.status = query.status;
     }
 
-    if (query.userId) {
-        filter.user_id = query.userId;
+    if (query.userId && typeof query.userId === "string" && query.userId.trim()) {
+        filter.user_id = query.userId.trim();
     }
 
-    return filter;
+    return filter as QueryFilter<TransactionDocument>;
 }
 
 export function getSort(

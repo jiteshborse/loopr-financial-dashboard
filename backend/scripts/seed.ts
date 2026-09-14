@@ -1,9 +1,12 @@
 import "dotenv/config";
 import fs from "node:fs/promises";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 import mongoose from "mongoose";
 import { connectDatabase, disconnectDatabase } from "../src/config/database";
 import { Transaction } from "../src/models/Transaction";
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 type RawTransaction = {
   id: number;

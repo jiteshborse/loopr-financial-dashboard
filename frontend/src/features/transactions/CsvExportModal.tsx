@@ -29,12 +29,14 @@ interface CsvExportModalProps {
     open: boolean;
     transactions: Transaction[];
     onClose: () => void;
+    onExportSuccess?: (count: number) => void;
 }
 
 export default function CsvExportModal({
     open,
     transactions,
     onClose,
+    onExportSuccess,
 }: CsvExportModalProps) {
     const [selectedColumns, setSelectedColumns] =
         useState<CsvColumn[]>(
@@ -93,6 +95,8 @@ export default function CsvExportModal({
             csv,
             `transactions-${date}.csv`
         );
+
+        onExportSuccess?.(transactions.length);
 
         onClose();
     }

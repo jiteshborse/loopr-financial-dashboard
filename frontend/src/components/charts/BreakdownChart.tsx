@@ -6,6 +6,7 @@ import {
 
 import {
     Cell,
+    Legend,
     Pie,
     PieChart,
     ResponsiveContainer,
@@ -21,6 +22,11 @@ interface BreakdownChartProps {
     subtitle: string;
 }
 
+const CATEGORY_COLORS: Record<string, string> = {
+    Revenue: "#10b981",
+    Expense: "#f43f5e",
+};
+
 export default function BreakdownChart({
     data,
     title,
@@ -33,26 +39,22 @@ export default function BreakdownChart({
 
     return (
         <Card sx={{ height: "100%" }}>
-            <CardContent>
+            <CardContent sx={{ p: 3 }}>
                 <Typography
                     variant="h6"
-                    fontWeight={700}
+                    sx={{ fontWeight: 750, color: "#ffffff", letterSpacing: "-0.015em" }}
                 >
                     {title}
                 </Typography>
 
                 <Typography
                     variant="body2"
-                    color="text.secondary"
-                    sx={{ mb: 2 }}
+                    sx={{ color: "#94a3b8", mb: 2, mt: 0.25 }}
                 >
                     {subtitle}
                 </Typography>
 
-                <ResponsiveContainer
-                    width="100%"
-                    height={280}
-                >
+                <ResponsiveContainer width="100%" height={280}>
                     <PieChart>
                         <Pie
                             data={chartData}
@@ -60,18 +62,41 @@ export default function BreakdownChart({
                             nameKey="name"
                             cx="50%"
                             cy="50%"
-                            outerRadius={90}
-                            label
+                            innerRadius={65}
+                            outerRadius={95}
+                            paddingAngle={4}
+                            stroke="none"
                         >
                             {chartData.map((entry) => (
-                                <Cell key={entry.name} />
+                                <Cell
+                                    key={entry.name}
+                                    fill={
+                                        CATEGORY_COLORS[entry.name] ||
+                                        "#6366f1"
+                                    }
+                                />
                             ))}
                         </Pie>
 
                         <Tooltip
-                            formatter={(value) =>
-                                formatCurrency(Number(value))
-                            }
+                            contentStyle={{
+                                backgroundColor: "#0d131f",
+                                borderColor: "rgba(255, 255, 255, 0.12)",
+                                borderRadius: 10,
+                                boxShadow: "0 12px 30px rgba(0, 0, 0, 0.6)",
+                                color: "#f8fafc",
+                            }}
+                            formatter={(value) => [
+                                formatCurrency(Number(value)),
+                                "Total Amount",
+                            ]}
+                        />
+
+                        <Legend
+                            verticalAlign="bottom"
+                            wrapperStyle={{
+                                paddingTop: 12,
+                            }}
                         />
                     </PieChart>
                 </ResponsiveContainer>

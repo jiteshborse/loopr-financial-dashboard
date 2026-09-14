@@ -42,6 +42,10 @@ router.post("/login", async (req, res, next) => {
             });
         }
 
+        // Record last login timestamp in MongoDB
+        user.lastLogin = new Date();
+        await user.save();
+
         const token = createAccessToken({
             userId: user._id.toString(),
             role: user.role
@@ -58,8 +62,12 @@ router.post("/login", async (req, res, next) => {
             message: "Login successful.",
             user: {
                 id: user._id,
+                name: user.name,
                 email: user.email,
-                role: user.role
+                role: user.role,
+                location: user.location,
+                title: user.title,
+                lastLogin: user.lastLogin,
             }
         });
     } catch (error) {
@@ -68,7 +76,11 @@ router.post("/login", async (req, res, next) => {
 });
 
 router.post("/logout", (_req, res) => {
-    res.clearCookie("accessToken");
+    res.clearCookie("accessToken", {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
+    });
 
     return res.json({
         message: "Logout successful."
@@ -78,7 +90,7 @@ router.post("/logout", (_req, res) => {
 router.get("/me", requireAuth, async (req: AuthenticatedRequest, res, next) => {
     try {
         const user = await User.findById(req.user?.userId).select(
-            "_id email role"
+            "_id name email role location title lastLogin"
         );
 
         if (!user) {
@@ -89,6 +101,44 @@ router.get("/me", requireAuth, async (req: AuthenticatedRequest, res, next) => {
 
         return res.json({
             user
+        });
+    } catch (error) {
+        next(error);
+    }
+});
+
+router.patch("/me", requireAuth, async (req: AuthenticatedRequest, res, next) => {
+    try {
+        const { name, location } = req.body;
+        const user = await User.findById(req.user?.userId);
+
+        if (!user) {
+            return res.status(401).json({
+                error: "User no longer exists."
+            });
+        }
+
+        if (typeof name === "string" && name.trim()) {
+            user.name = name.trim();
+        }
+
+        if (typeof location === "string" && location.trim()) {
+            user.location = location.trim();
+        }
+
+        await user.save();
+
+        return res.json({
+            message: "Profile updated successfully.",
+            user: {
+                id: user._id,
+                name: user.name,
+                email: user.email,
+                role: user.role,
+                location: user.location,
+                title: user.title,
+                lastLogin: user.lastLogin,
+            }
         });
     } catch (error) {
         next(error);
