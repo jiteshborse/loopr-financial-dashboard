@@ -1,10 +1,20 @@
 import { useCallback, useEffect, useState } from "react";
 
+import type { Transaction } from "../../types/transaction";
+
 import {
     Box,
     Container,
     Typography,
 } from "@mui/material";
+
+import {
+    getTransactions,
+    getTransactionsForExport,
+    type TransactionQuery,
+} from "./transactionApi";
+
+import CsvExportModal from "./CsvExportModal";
 
 import {
     getTransactions,
@@ -16,6 +26,8 @@ import type {
     TransactionResponse,
 } from "../../types/transaction";
 
+import { Button } from "@mui/material";
+
 import TransactionFilters from "./TransactionFilters";
 import TransactionTable from "./TransactionTable";
 import Pagination from "./Pagination";
@@ -24,7 +36,41 @@ import LoadingState from "../../components/common/LoadingState";
 import ErrorState from "../../components/common/ErrorState";
 import EmptyState from "../../components/common/EmptyState";
 
+async function handleOpenExport() {
+    try {
+        setExportLoading(true);
+        setError("");
+
+        const exportData =
+            await getTransactionsForExport({
+                ...filters,
+                sortBy,
+                sortOrder,
+            });
+
+        setExportTransactions(exportData);
+        setExportOpen(true);
+    } catch (error) {
+        setError(
+            error instanceof Error
+                ? error.message
+                : "Failed to prepare CSV export"
+        );
+    } finally {
+        setExportLoading(false);
+    }
+}
+
 export default function TransactionsPage() {
+    const [exportOpen, setExportOpen] =
+        useState(false);
+
+    const [exportTransactions, setExportTransactions] =
+        useState<Transaction[]>([]);
+
+    const [exportLoading, setExportLoading] =
+        useState(false);
+
     const [response, setResponse] =
         useState<TransactionResponse | null>(null);
 
@@ -142,6 +188,24 @@ export default function TransactionsPage() {
                 </Typography>
             </Box>
 
+            <Box
+                sx={{
+                    display: "flex",
+                    justifyContent: "flex-end",
+                    mb: 2,
+                }}
+            >
+                <Button
+                    variant="contained"
+                    onClick={handleOpenExport}
+                    disabled={exportLoading}
+                >
+                    {exportLoading
+                        ? "Preparing CSV..."
+                        : "Export CSV"}
+                </Button>
+            </Box>
+
             <TransactionFilters
                 filters={filters}
                 onApply={handleApply}
@@ -192,6 +256,13 @@ export default function TransactionsPage() {
                         />
                     </>
                 )}
+            <CsvExportModal
+                open={exportOpen}
+                transactions={exportTransactions}
+                onClose={() =>
+                    setExportOpen(false)
+                }
+            />
         </Container>
     );
 }
