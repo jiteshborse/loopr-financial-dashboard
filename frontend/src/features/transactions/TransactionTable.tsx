@@ -99,10 +99,8 @@ export default function TransactionTable({
                             </TableCell>
 
                             <TableCell>
-                                <Chip
-                                    label={transaction.status}
-                                    size="small"
-                                    variant="outlined"
+                                <StatusChip
+                                    status={transaction.status}
                                 />
                             </TableCell>
 

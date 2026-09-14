@@ -1,7 +1,22 @@
 const API_URL =
-    import.meta.env.VITE_API_URL ?? "http://localhost:5000/api";
+    import.meta.env.VITE_API_URL ??
+    "http://localhost:5000/api";
 
-interface ApiError {
+export class ApiError extends Error {
+    status: number;
+
+    constructor(
+        message: string,
+        status: number
+    ) {
+        super(message);
+
+        this.name = "ApiError";
+        this.status = status;
+    }
+}
+
+interface ApiErrorResponse {
     message?: string;
 }
 
@@ -9,22 +24,39 @@ async function request<T>(
     endpoint: string,
     options: RequestInit = {}
 ): Promise<T> {
-    const response = await fetch(`${API_URL}${endpoint}`, {
-        ...options,
-        credentials: "include",
-        headers: {
-            "Content-Type": "application/json",
-            ...(options.headers || {}),
-        },
-    });
+    let response: Response;
 
-    const data = (await response.json().catch(() => ({}))) as
-        | T
-        | ApiError;
+    try {
+        response = await fetch(
+            `${API_URL}${endpoint}`,
+            {
+                ...options,
+                credentials: "include",
+                headers: {
+                    "Content-Type": "application/json",
+                    ...(options.headers || {}),
+                },
+            }
+        );
+    } catch {
+        throw new ApiError(
+            "Unable to connect to the server. Please check your connection.",
+            0
+        );
+    }
+
+    const data = (await response
+        .json()
+        .catch(() => ({}))) as T | ApiErrorResponse;
 
     if (!response.ok) {
-        throw new Error(
-            (data as ApiError).message || "Something went wrong"
+        const message =
+            (data as ApiErrorResponse).message ??
+            "Something went wrong.";
+
+        throw new ApiError(
+            message,
+            response.status
         );
     }
 

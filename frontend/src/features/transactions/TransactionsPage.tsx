@@ -2,6 +2,9 @@ import { useCallback, useEffect, useState } from "react";
 
 import type { Transaction } from "../../types/transaction";
 
+import AlertSnackbar from "../../components/common/AlertSnackbar";
+import { getErrorMessage } from "../../utils/error";
+
 import {
     Box,
     Container,
@@ -64,6 +67,16 @@ async function handleOpenExport() {
 export default function TransactionsPage() {
     const [exportOpen, setExportOpen] =
         useState(false);
+
+    const [notification, setNotification] =
+        useState<{
+            message: string;
+            severity:
+            | "success"
+            | "info"
+            | "warning"
+            | "error";
+        } | null>(null);
 
     const [exportTransactions, setExportTransactions] =
         useState<Transaction[]>([]);
@@ -170,6 +183,17 @@ export default function TransactionsPage() {
                 },
             }}
         >
+
+            <AlertSnackbar
+                open={notification !== null}
+                message={notification?.message ?? ""}
+                severity={
+                    notification?.severity ?? "success"
+                }
+                onClose={() =>
+                    setNotification(null)
+                }
+            />
             <Box sx={{ mb: 4 }}>
                 <Typography
                     variant="h4"
@@ -216,7 +240,10 @@ export default function TransactionsPage() {
 
             {!loading && error && (
                 <Box sx={{ mt: 3 }}>
-                    <ErrorState message={error} />
+                    <ErrorState
+                        message={error}
+                        onRetry={loadTransactions}
+                    />
                 </Box>
             )}
 
@@ -262,6 +289,13 @@ export default function TransactionsPage() {
                 onClose={() =>
                     setExportOpen(false)
                 }
+                onExportSuccess={(count) => {
+                    setNotification({
+                        message: `${count} transaction${count === 1 ? "" : "s"
+                            } exported successfully.`,
+                        severity: "success",
+                    });
+                }}
             />
         </Container>
     );

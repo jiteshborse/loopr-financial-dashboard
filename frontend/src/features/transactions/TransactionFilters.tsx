@@ -7,6 +7,15 @@ import {
     TextField,
 } from "@mui/material";
 
+import {
+    Alert,
+    Box,
+    Button,
+    MenuItem,
+    Stack,
+    TextField,
+} from "@mui/material";
+
 import type {
     TransactionCategory,
     TransactionFilters as Filters,
@@ -18,6 +27,8 @@ interface TransactionFiltersProps {
     onApply: (filters: Filters) => void;
     onReset: () => void;
 }
+
+
 
 export default function TransactionFilters({
     filters,
@@ -37,7 +48,73 @@ export default function TransactionFilters({
         }));
     }
 
+    {
+        validationError && (
+            <Alert
+                severity="warning"
+                onClose={() =>
+                    setValidationError("")
+                }
+            >
+                {validationError}
+            </Alert>
+        )
+    }
+
+    const [validationError, setValidationError] =
+        useState("");
+
     function handleApply() {
+        setValidationError("");
+
+        if (
+            localFilters.dateFrom &&
+            localFilters.dateTo &&
+            localFilters.dateFrom >
+            localFilters.dateTo
+        ) {
+            setValidationError(
+                "The start date cannot be later than the end date."
+            );
+
+            return;
+        }
+
+        if (
+            localFilters.minAmount &&
+            localFilters.maxAmount &&
+            Number(localFilters.minAmount) >
+            Number(localFilters.maxAmount)
+        ) {
+            setValidationError(
+                "Minimum amount cannot be greater than maximum amount."
+            );
+
+            return;
+        }
+
+        if (
+            localFilters.minAmount &&
+            Number(localFilters.minAmount) < 0
+        ) {
+            setValidationError(
+                "Minimum amount cannot be negative."
+            );
+
+            return;
+        }
+
+        if (
+            localFilters.maxAmount &&
+            Number(localFilters.maxAmount) < 0
+        ) {
+            setValidationError(
+                "Maximum amount cannot be negative."
+            );
+
+            return;
+        }
+
         onApply(localFilters);
     }
 
