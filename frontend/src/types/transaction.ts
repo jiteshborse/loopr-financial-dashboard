@@ -1,16 +1,12 @@
-export type TransactionCategory =
-    | "Revenue"
-    | "Expense";
+export type TransactionCategory = "Revenue" | "Expense";
 
-export type TransactionStatus =
-    | "Paid"
-    | "Pending";
+export type TransactionStatus = "Paid" | "Pending";
 
 export interface Transaction {
     id: number;
+    date: string;
     amount: string;
     category: TransactionCategory;
-    date: string;
     status: TransactionStatus;
     user_id: string;
     user_profile: string;
@@ -39,4 +35,9 @@ export interface TransactionMeta {
 export interface TransactionResponse {
     data: Transaction[];
     meta: TransactionMeta;
+    filters: TransactionFilters;
+    sort: {
+        sortBy: string;
+        sortOrder: "asc" | "desc";
+    };
 }

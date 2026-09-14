@@ -1,38 +1,30 @@
-import {
-    apiFetch
-} from "../../services/api";
-
+import request from "../../services/api";
 import type {
     AuthUser,
-    LoginResponse
+    LoginResponse,
 } from "../../types/auth";
 
-export function login(
+export async function login(
     email: string,
     password: string
-) {
-    return apiFetch<LoginResponse>(
-        "/auth/login",
-        {
-            method: "POST",
-            body: JSON.stringify({
-                email,
-                password
-            })
-        }
-    );
-}
-
-export function logout() {
-    return apiFetch<{
-        message: string;
-    }>("/auth/logout", {
-        method: "POST"
+): Promise<LoginResponse> {
+    return request<LoginResponse>("/auth/login", {
+        method: "POST",
+        body: JSON.stringify({
+            email,
+            password,
+        }),
     });
 }
 
-export function getCurrentUser() {
-    return apiFetch<{
-        user: AuthUser;
-    }>("/auth/me");
+export async function logout(): Promise<void> {
+    await request("/auth/logout", {
+        method: "POST",
+    });
+}
+
+export async function getCurrentUser(): Promise<AuthUser> {
+    const response = await request<{ user: AuthUser }>("/auth/me");
+
+    return response.user;
 }

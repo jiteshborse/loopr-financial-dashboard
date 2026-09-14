@@ -1,65 +1,57 @@
-import {
-  useEffect,
-  useState
-} from "react";
+import { useEffect, useState } from "react";
 
-import {
-  CircularProgress,
-  Box
-} from "@mui/material";
-
-import {
-  LoginPage
-} from "../features/auth/LoginPage";
-
-import {
-  DashboardPage
-} from "../features/dashboard/DashboardPage";
-
+import LoginPage from "./features/auth/LoginPage";
+import DashboardPage from "./features/dashboard/DashboardPage";
 import {
   getCurrentUser,
-  logout
-} from "../features/auth/authApi";
+  logout,
+} from "./features/auth/authApi";
 
-export default function App() {
+import AppShell from "./components/layout/AppShell";
+import LoadingState from "./components/common/LoadingState";
+
+function App() {
   const [authenticated, setAuthenticated] =
     useState<boolean | null>(null);
 
   useEffect(() => {
-    getCurrentUser()
-      .then(() =>
-        setAuthenticated(true)
-      )
-      .catch(() =>
-        setAuthenticated(false)
-      );
+    async function checkAuthentication() {
+      try {
+        await getCurrentUser();
+        setAuthenticated(true);
+      } catch {
+        setAuthenticated(false);
+      }
+    }
+
+    checkAuthentication();
   }, []);
 
+  async function handleLogout() {
+    try {
+      await logout();
+    } finally {
+      setAuthenticated(false);
+    }
+  }
+
   if (authenticated === null) {
-    return (
-      <Box
-        sx={{
-          display: "flex",
-          justifyContent: "center",
-          py: 10
-        }}
-      >
-        <CircularProgress />
-      </Box>
-    );
+    return <LoadingState />;
   }
 
   if (!authenticated) {
     return (
       <LoginPage
-        onLogin={() =>
-          setAuthenticated(true)
-        }
+        onLogin={() => setAuthenticated(true)}
       />
     );
   }
 
   return (
-    <DashboardPage />
+    <AppShell onLogout={handleLogout}>
+      <DashboardPage />
+    </AppShell>
   );
 }
+
+export default App;

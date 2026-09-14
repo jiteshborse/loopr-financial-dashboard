@@ -1,60 +1,42 @@
-import {
-    useState
-} from "react";
-
+import { FormEvent, useState } from "react";
 import {
     Alert,
     Box,
     Button,
-    Container,
     Paper,
+    Stack,
     TextField,
-    Typography
+    Typography,
 } from "@mui/material";
 
-import {
-    login
-} from "./authApi";
+import { login } from "./authApi";
 
 interface LoginPageProps {
     onLogin: () => void;
 }
 
-export function LoginPage({
-    onLogin
+export default function LoginPage({
+    onLogin,
 }: LoginPageProps) {
-    const [email, setEmail] =
-        useState("");
+    const [email, setEmail] = useState("analyst@loopr.dev");
+    const [password, setPassword] = useState("Loopr@12345");
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState("");
 
-    const [password, setPassword] =
-        useState("");
-
-    const [error, setError] =
-        useState("");
-
-    const [loading, setLoading] =
-        useState(false);
-
-    async function handleSubmit(
-        event: React.FormEvent
-    ) {
+    async function handleSubmit(event: FormEvent) {
         event.preventDefault();
 
         setError("");
         setLoading(true);
 
         try {
-            await login(
-                email,
-                password
-            );
-
+            await login(email, password);
             onLogin();
-        } catch (err) {
+        } catch (error) {
             setError(
-                err instanceof Error
-                    ? err.message
-                    : "Login failed."
+                error instanceof Error
+                    ? error.message
+                    : "Login failed"
             );
         } finally {
             setLoading(false);
@@ -62,83 +44,84 @@ export function LoginPage({
     }
 
     return (
-        <Container
-            maxWidth="sm"
-            sx={{ py: 10 }}
+        <Box
+            sx={{
+                minHeight: "100vh",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                p: 2,
+                backgroundColor: "#0b0f14",
+            }}
         >
             <Paper
-                sx={{ p: 4 }}
-                elevation={3}
+                elevation={8}
+                sx={{
+                    width: "100%",
+                    maxWidth: 420,
+                    p: 4,
+                }}
             >
-                <Typography
-                    variant="h4"
-                    fontWeight={700}
-                    gutterBottom
-                >
-                    Sign in
-                </Typography>
+                <Stack spacing={3}>
+                    <Box>
+                        <Typography variant="h4" fontWeight={700}>
+                            Loopr Analytics
+                        </Typography>
 
-                <Typography
-                    color="text.secondary"
-                    sx={{ mb: 3 }}
-                >
-                    Financial Analytics Dashboard
-                </Typography>
+                        <Typography
+                            variant="body2"
+                            color="text.secondary"
+                            sx={{ mt: 1 }}
+                        >
+                            Sign in to access your financial dashboard.
+                        </Typography>
+                    </Box>
 
-                {error && (
-                    <Alert
-                        severity="error"
-                        sx={{ mb: 2 }}
+                    {error && (
+                        <Alert severity="error">
+                            {error}
+                        </Alert>
+                    )}
+
+                    <Box
+                        component="form"
+                        onSubmit={handleSubmit}
                     >
-                        {error}
-                    </Alert>
-                )}
+                        <Stack spacing={2}>
+                            <TextField
+                                label="Email"
+                                type="email"
+                                value={email}
+                                onChange={(event) =>
+                                    setEmail(event.target.value)
+                                }
+                                fullWidth
+                                required
+                            />
 
-                <Box
-                    component="form"
-                    onSubmit={handleSubmit}
-                >
-                    <TextField
-                        fullWidth
-                        label="Email"
-                        type="email"
-                        value={email}
-                        onChange={(event) =>
-                            setEmail(
-                                event.target.value
-                            )
-                        }
-                        margin="normal"
-                        required
-                    />
+                            <TextField
+                                label="Password"
+                                type="password"
+                                value={password}
+                                onChange={(event) =>
+                                    setPassword(event.target.value)
+                                }
+                                fullWidth
+                                required
+                            />
 
-                    <TextField
-                        fullWidth
-                        label="Password"
-                        type="password"
-                        value={password}
-                        onChange={(event) =>
-                            setPassword(
-                                event.target.value
-                            )
-                        }
-                        margin="normal"
-                        required
-                    />
-
-                    <Button
-                        fullWidth
-                        type="submit"
-                        variant="contained"
-                        disabled={loading}
-                        sx={{ mt: 3 }}
-                    >
-                        {loading
-                            ? "Signing in..."
-                            : "Sign in"}
-                    </Button>
-                </Box>
+                            <Button
+                                type="submit"
+                                variant="contained"
+                                size="large"
+                                disabled={loading}
+                            >
+                                {loading ? "Signing in..." : "Sign in"}
+                            </Button>
+                        </Stack>
+                    </Box>
+                </Stack>
             </Paper>
-        </Container>
+        </Box>
     );
 }

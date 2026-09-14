@@ -1,65 +1,54 @@
-import { apiFetch } from "../../services/api";
+import request from "../../services/api";
 import type {
-    BreakdownAnalytics,
     SummaryAnalytics,
-    TrendPoint
+    TrendPoint,
+    BreakdownAnalytics,
 } from "../../types/analytics";
-import type { TransactionFilters } from "../transactions/transactionApi";
 
-function buildQuery(
-    params: TransactionFilters
-): string {
-    const searchParams =
-        new URLSearchParams();
+import type { TransactionFilters } from "../../types/transaction";
 
-    Object.entries(params).forEach(
-        ([key, value]) => {
-            if (
-                value !== undefined &&
-                value !== ""
-            ) {
-                searchParams.set(
-                    key,
-                    String(value)
-                );
-            }
+function buildQuery(filters: TransactionFilters = {}) {
+    const params = new URLSearchParams();
+
+    Object.entries(filters).forEach(([key, value]) => {
+        if (
+            value !== undefined &&
+            value !== null &&
+            value !== ""
+        ) {
+            params.set(key, String(value));
         }
-    );
+    });
 
-    const query =
-        searchParams.toString();
-
-    return query ? `?${query}` : "";
+    return params.toString();
 }
 
-export function getSummary(
+export async function getSummary(
     filters: TransactionFilters = {}
-) {
-    return apiFetch<SummaryAnalytics>(
-        `/analytics/summary${buildQuery(
-            filters
-        )}`
+): Promise<SummaryAnalytics> {
+    const query = buildQuery(filters);
+
+    return request<SummaryAnalytics>(
+        `/analytics/summary${query ? `?${query}` : ""}`
     );
 }
 
-export function getTrends(
+export async function getTrends(
     filters: TransactionFilters = {}
-) {
-    return apiFetch<{
-        data: TrendPoint[];
-    }>(
-        `/analytics/trends${buildQuery(
-            filters
-        )}`
+): Promise<{ data: TrendPoint[] }> {
+    const query = buildQuery(filters);
+
+    return request<{ data: TrendPoint[] }>(
+        `/analytics/trends${query ? `?${query}` : ""}`
     );
 }
 
-export function getBreakdown(
+export async function getBreakdown(
     filters: TransactionFilters = {}
-) {
-    return apiFetch<BreakdownAnalytics>(
-        `/analytics/breakdown${buildQuery(
-            filters
-        )}`
+): Promise<BreakdownAnalytics> {
+    const query = buildQuery(filters);
+
+    return request<BreakdownAnalytics>(
+        `/analytics/breakdown${query ? `?${query}` : ""}`
     );
 }
