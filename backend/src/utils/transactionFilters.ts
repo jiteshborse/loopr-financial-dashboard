@@ -1,329 +1,106 @@
-import mongoose from "mongoose";
+import { FilterQuery } from "mongoose";
+import { TransactionDocument } from "../models/Transaction";
 
-export type TransactionQuery = Record<string, unknown>;
-
-export const SORT_FIELDS = {
-    id: "id",
-    date: "date",
-    amount: "amount",
-    category: "category",
-    status: "status",
-    userId: "user_id"
-} as const;
-
-export type SortField = keyof typeof SORT_FIELDS;
-
-function parseAmount(
-    value: unknown
-): mongoose.Types.Decimal128 | null {
-    if (typeof value !== "string" || !value.trim()) {
-        return null;
-    }
-
-    const number = Number(value);
-
-    if (!Number.isFinite(number) || number < 0) {
-        return null;
-    }
-
-    return mongoose.Types.Decimal128.fromString(
-        number.toFixed(2)
-    );
-}
-
-function parseDate(
-    value: unknown,
-    endOfDay = false
-): Date | null {
-    if (typeof value !== "string" || !value.trim()) {
-        return null;
-    }
-
-    const date = new Date(value);
-
-    if (Number.isNaN(date.getTime())) {
-        return null;
-    }
-
-    if (
-        endOfDay &&
-        /^\d{4}-\d{2}-\d{2}$/.test(value)
-    ) {
-        date.setUTCHours(23, 59, 59, 999);
-    }
-
-    return date;
+export interface TransactionQuery {
+    search?: string;
+    dateFrom?: string;
+    dateTo?: string;
+    minAmount?: string;
+    maxAmount?: string;
+    category?: string;
+    status?: string;
+    userId?: string;
+    sortBy?: string;
+    sortOrder?: string;
+    page?: string;
+    pageSize?: string;
 }
 
 export function buildTransactionFilter(
     query: TransactionQuery
-): Record<string, unknown> {
-    const {
-        search,
-        dateFrom,
-        dateTo,
-        minAmount,
-        maxAmount,
-        category,
-        status,
-        userId
-    } = query;
+): FilterQuery<TransactionDocument> {
+    const filter: FilterQuery<TransactionDocument> = {};
 
-    const filter: Record<string, unknown> = {};
+    if (query.search) {
+        const searchRegex = new RegExp(query.search, "i");
 
-    // -----------------------------
-    // Search
-    // -----------------------------
-
-    if (
-        typeof search === "string" &&
-        search.trim()
-    ) {
-        const searchValue = search.trim();
-
-        const searchConditions: Record<string, unknown>[] = [
-            {
-                user_id: {
-                    $regex: searchValue,
-                    $options: "i"
-                }
-            },
-            {
-                category: {
-                    $regex: searchValue,
-                    $options: "i"
-                }
-            },
-            {
-                status: {
-                    $regex: searchValue,
-                    $options: "i"
-                }
-            }
+        const searchConditions: FilterQuery<TransactionDocument>[] = [
+            { user_id: searchRegex },
+            { category: searchRegex },
+            { status: searchRegex },
         ];
 
-        const numericSearch = Number(searchValue);
+        const numericSearch = Number(query.search);
 
-        if (Number.isFinite(numericSearch)) {
-            searchConditions.push({
-                id: numericSearch
-            });
-
-            searchConditions.push({
-                amount:
-                    mongoose.Types.Decimal128.fromString(
-                        numericSearch.toFixed(2)
-                    )
-            });
+        if (!Number.isNaN(numericSearch)) {
+            searchConditions.push({ id: numericSearch });
         }
 
         filter.$or = searchConditions;
     }
 
-    // -----------------------------
-    // Date
-    // -----------------------------
+    if (query.dateFrom || query.dateTo) {
+        filter.date = {};
 
-    const parsedDateFrom = parseDate(dateFrom);
-    const parsedDateTo = parseDate(dateTo, true);
-
-    if (
-        dateFrom &&
-        !parsedDateFrom
-    ) {
-        throw new Error(
-            "Invalid dateFrom. Use YYYY-MM-DD or a valid date."
-        );
-    }
-
-    if (
-        dateTo &&
-        !parsedDateTo
-    ) {
-        throw new Error(
-            "Invalid dateTo. Use YYYY-MM-DD or a valid date."
-        );
-    }
-
-    if (
-        parsedDateFrom &&
-        parsedDateTo &&
-        parsedDateFrom > parsedDateTo
-    ) {
-        throw new Error(
-            "dateFrom cannot be later than dateTo."
-        );
-    }
-
-    if (
-        parsedDateFrom ||
-        parsedDateTo
-    ) {
-        const dateFilter: Record<string, Date> = {};
-
-        if (parsedDateFrom) {
-            dateFilter.$gte = parsedDateFrom;
+        if (query.dateFrom) {
+            filter.date.$gte = new Date(query.dateFrom);
         }
 
-        if (parsedDateTo) {
-            dateFilter.$lte = parsedDateTo;
+        if (query.dateTo) {
+            const dateTo = new Date(query.dateTo);
+
+            if (query.dateTo.length === 10) {
+                dateTo.setUTCHours(23, 59, 59, 999);
+            }
+
+            filter.date.$lte = dateTo;
+        }
+    }
+
+    if (query.minAmount || query.maxAmount) {
+        filter.amount = {};
+
+        if (query.minAmount) {
+            filter.amount.$gte = query.minAmount;
         }
 
-        filter.date = dateFilter;
-    }
-
-    // -----------------------------
-    // Amount
-    // -----------------------------
-
-    const parsedMinAmount =
-        parseAmount(minAmount);
-
-    const parsedMaxAmount =
-        parseAmount(maxAmount);
-
-    if (
-        minAmount &&
-        !parsedMinAmount
-    ) {
-        throw new Error(
-            "Invalid minAmount."
-        );
-    }
-
-    if (
-        maxAmount &&
-        !parsedMaxAmount
-    ) {
-        throw new Error(
-            "Invalid maxAmount."
-        );
-    }
-
-    if (
-        parsedMinAmount &&
-        parsedMaxAmount &&
-        Number(minAmount) >
-        Number(maxAmount)
-    ) {
-        throw new Error(
-            "minAmount cannot be greater than maxAmount."
-        );
-    }
-
-    if (
-        parsedMinAmount ||
-        parsedMaxAmount
-    ) {
-        const amountFilter: Record<
-            string,
-            mongoose.Types.Decimal128
-        > = {};
-
-        if (parsedMinAmount) {
-            amountFilter.$gte =
-                parsedMinAmount;
+        if (query.maxAmount) {
+            filter.amount.$lte = query.maxAmount;
         }
-
-        if (parsedMaxAmount) {
-            amountFilter.$lte =
-                parsedMaxAmount;
-        }
-
-        filter.amount = amountFilter;
     }
 
-    // -----------------------------
-    // Category
-    // -----------------------------
-
-    if (category !== undefined) {
-        if (
-            category !== "Revenue" &&
-            category !== "Expense"
-        ) {
-            throw new Error(
-                "category must be Revenue or Expense."
-            );
-        }
-
-        filter.category = category;
+    if (query.category) {
+        filter.category = query.category;
     }
 
-    // -----------------------------
-    // Status
-    // -----------------------------
-
-    if (status !== undefined) {
-        if (
-            status !== "Paid" &&
-            status !== "Pending"
-        ) {
-            throw new Error(
-                "status must be Paid or Pending."
-            );
-        }
-
-        filter.status = status;
+    if (query.status) {
+        filter.status = query.status;
     }
 
-    // -----------------------------
-    // User
-    // -----------------------------
-
-    if (
-        typeof userId === "string" &&
-        userId.trim()
-    ) {
-        filter.user_id =
-            userId.trim();
+    if (query.userId) {
+        filter.user_id = query.userId;
     }
 
     return filter;
 }
 
 export function getSort(
-    query: TransactionQuery
-) {
-    const requestedSortBy =
-        typeof query.sortBy === "string"
-            ? query.sortBy
-            : "date";
+    sortBy = "date",
+    sortOrder = "desc"
+): Record<string, 1 | -1> {
+    const allowedSortFields: Record<string, string> = {
+        id: "id",
+        date: "date",
+        amount: "amount",
+        category: "category",
+        status: "status",
+        userId: "user_id",
+    };
 
-    const requestedSortOrder =
-        typeof query.sortOrder === "string"
-            ? query.sortOrder
-            : "desc";
-
-    if (
-        !(requestedSortBy in SORT_FIELDS)
-    ) {
-        throw new Error(
-            `Invalid sortBy. Allowed values: ${Object.keys(
-                SORT_FIELDS
-            ).join(", ")}.`
-        );
-    }
-
-    if (
-        requestedSortOrder !== "asc" &&
-        requestedSortOrder !== "desc"
-    ) {
-        throw new Error(
-            "sortOrder must be asc or desc."
-        );
-    }
+    const field = allowedSortFields[sortBy] ?? "date";
+    const order = sortOrder === "asc" ? 1 : -1;
 
     return {
-        sortBy: requestedSortBy,
-        sortOrder: requestedSortOrder,
-        sort: {
-            [SORT_FIELDS[
-                requestedSortBy as SortField
-            ]]:
-                requestedSortOrder === "asc"
-                    ? 1
-                    : -1
-        }
+        [field]: order,
     };
 }

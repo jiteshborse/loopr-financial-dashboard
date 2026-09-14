@@ -1,149 +1,74 @@
-import {
-  Router,
-  type Request,
-  type Response,
-  type NextFunction
-} from "express";
-
-import { Transaction } from "../models/Transaction";
+import { Router, Request, Response } from "express";
+import Transaction from "../models/Transaction";
 import { requireAuth } from "../middleware/authMiddleware";
-
 import {
   buildTransactionFilter,
-  getSort
+  getSort,
+  TransactionQuery,
 } from "../utils/transactionFilters";
 
 const router = Router();
 
-function parsePositiveInteger(
-  value: unknown,
-  defaultValue: number,
-  maxValue?: number
-): number {
-  if (
-    typeof value !== "string" ||
-    !value.trim()
-  ) {
-    return defaultValue;
-  }
+router.get("/", requireAuth, async (req: Request, res: Response) => {
+  try {
+    const query = req.query as TransactionQuery;
 
-  const parsed = Number(value);
+    const page = Math.max(Number(query.page) || 1, 1);
 
-  if (
-    !Number.isInteger(parsed) ||
-    parsed < 1
-  ) {
-    return defaultValue;
-  }
+    const requestedPageSize = Number(query.pageSize) || 25;
+    const pageSize = Math.min(Math.max(requestedPageSize, 1), 100);
 
-  if (maxValue !== undefined) {
-    return Math.min(
-      parsed,
-      maxValue
-    );
-  }
+    const filter = buildTransactionFilter(query);
 
-  return parsed;
-}
+    const sortBy = query.sortBy || "date";
+    const sortOrder = query.sortOrder || "desc";
 
-router.get(
-  "/",
-  requireAuth,
-  async (
-    req: Request,
-    res: Response,
-    next: NextFunction
-  ) => {
-    try {
-      const filter =
-        buildTransactionFilter(
-          req.query
-        );
+    const sort = getSort(sortBy, sortOrder);
 
-      const {
+    const [transactions, total] = await Promise.all([
+      Transaction.find(filter)
+        .sort(sort)
+        .skip((page - 1) * pageSize)
+        .limit(pageSize)
+        .lean(),
+
+      Transaction.countDocuments(filter),
+    ]);
+
+    const totalPages = Math.ceil(total / pageSize);
+
+    res.json({
+      data: transactions,
+      meta: {
+        page,
+        pageSize,
+        total,
+        totalPages,
+        hasNextPage: page < totalPages,
+        hasPreviousPage: page > 1,
+      },
+      filters: {
+        search: query.search || null,
+        dateFrom: query.dateFrom || null,
+        dateTo: query.dateTo || null,
+        minAmount: query.minAmount || null,
+        maxAmount: query.maxAmount || null,
+        category: query.category || null,
+        status: query.status || null,
+        userId: query.userId || null,
+      },
+      sort: {
         sortBy,
-        sortOrder,
-        sort
-      } = getSort(req.query);
+        sortOrder: sortOrder === "asc" ? "asc" : "desc",
+      },
+    });
+  } catch (error) {
+    console.error("Transaction query error:", error);
 
-      const page =
-        parsePositiveInteger(
-          req.query.page,
-          1
-        );
-
-      const pageSize =
-        parsePositiveInteger(
-          req.query.pageSize,
-          25,
-          100
-        );
-
-      const skip =
-        (page - 1) *
-        pageSize;
-
-      const [
-        transactions,
-        total
-      ] = await Promise.all([
-        Transaction.find(filter)
-          .sort(sort)
-          .skip(skip)
-          .limit(pageSize)
-          .lean(),
-
-        Transaction.countDocuments(
-          filter
-        )
-      ]);
-
-      const totalPages =
-        Math.ceil(
-          total / pageSize
-        );
-
-      const data =
-        transactions.map(
-          (transaction) => ({
-            ...transaction,
-            amount:
-              transaction.amount.toString(),
-            date:
-              transaction.date.toISOString()
-          })
-        );
-
-      return res.json({
-        data,
-        meta: {
-          page,
-          pageSize,
-          total,
-          totalPages,
-          hasNextPage:
-            page < totalPages,
-          hasPreviousPage:
-            page > 1
-        },
-        filters: req.query,
-        sort: {
-          sortBy,
-          sortOrder
-        }
-      });
-    } catch (error) {
-      if (
-        error instanceof Error
-      ) {
-        return res.status(400).json({
-          error: error.message
-        });
-      }
-
-      next(error);
-    }
+    res.status(500).json({
+      message: "Failed to fetch transactions",
+    });
   }
-);
+});
 
 export default router;
