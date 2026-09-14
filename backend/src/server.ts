@@ -8,6 +8,7 @@ import helmet from "helmet";
 import rateLimit from "express-rate-limit";
 import authRoutes from "./routes/authRoutes";
 import analyticsRoutes from "./routes/analyticsRoutes";
+import analyticsRoutes from "./routes/analyticsRoutes";
 
 const app = express();
 const port = Number(process.env.PORT ?? 5000);
@@ -20,6 +21,7 @@ const loginLimiter = rateLimit({
 });
 
 app.use(helmet());
+app.use("/api/analytics", analyticsRoutes);
 app.use(cors({
     origin: "http://localhost:5173",
     credentials: true
