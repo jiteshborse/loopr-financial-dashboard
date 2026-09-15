@@ -21,6 +21,9 @@ const loginLimiter = rateLimit({
     message: { error: "Too many login attempts. Please try again after 15 minutes." },
 });
 
+// Trust reverse proxy headers (crucial for Render and rate limiting)
+app.set("trust proxy", 1);
+
 // Security & Parsing Middleware
 app.use(helmet());
 const allowedOrigins = [
@@ -32,17 +35,30 @@ const allowedOrigins = [
 ];
 
 if (process.env.FRONTEND_URL) {
-    allowedOrigins.push(process.env.FRONTEND_URL);
+    const urls = process.env.FRONTEND_URL.split(",").map((u) => u.trim().replace(/\/+$/, ""));
+    allowedOrigins.push(...urls);
 }
 
 app.use(
     cors({
         origin: (origin, callback) => {
+            if (!origin) {
+                return callback(null, true);
+            }
+
+            let isVercelDomain = false;
+            try {
+                const url = new URL(origin);
+                isVercelDomain = url.hostname.endsWith(".vercel.app");
+            } catch {
+                isVercelDomain = false;
+            }
+
             if (
-                !origin ||
                 allowedOrigins.includes(origin) ||
                 /^http:\/\/localhost:\d+$/.test(origin) ||
-                /^http:\/\/127\.0\.0\.1:\d+$/.test(origin)
+                /^http:\/\/127\.0\.0\.1:\d+$/.test(origin) ||
+                isVercelDomain
             ) {
                 callback(null, true);
             } else {
@@ -90,7 +106,7 @@ app.use(
 async function startServer() {
     await connectDatabase();
 
-    app.listen(port, () => {
+    app.listen(port, "0.0.0.0", () => {
         console.log(`Backend running at http://localhost:${port}`);
     });
 }

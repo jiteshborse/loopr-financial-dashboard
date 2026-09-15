@@ -51,15 +51,18 @@ router.post("/login", async (req, res, next) => {
             role: user.role
         });
 
+        const isProduction = process.env.NODE_ENV === "production";
+
         res.cookie("accessToken", token, {
             httpOnly: true,
-            secure: process.env.NODE_ENV === "production",
-            sameSite: "lax",
+            secure: isProduction,
+            sameSite: isProduction ? "none" : "lax",
             maxAge: 24 * 60 * 60 * 1000
         });
 
         return res.json({
             message: "Login successful.",
+            token,
             user: {
                 id: user._id,
                 name: user.name,
@@ -76,10 +79,12 @@ router.post("/login", async (req, res, next) => {
 });
 
 router.post("/logout", (_req, res) => {
+    const isProduction = process.env.NODE_ENV === "production";
+
     res.clearCookie("accessToken", {
         httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "lax",
+        secure: isProduction,
+        sameSite: isProduction ? "none" : "lax",
     });
 
     return res.json({

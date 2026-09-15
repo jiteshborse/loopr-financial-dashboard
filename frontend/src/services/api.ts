@@ -27,6 +27,9 @@ async function request<T>(
 ): Promise<T> {
     let response: Response;
 
+    const token = typeof localStorage !== "undefined" ? localStorage.getItem("accessToken") : null;
+    const authHeaders: Record<string, string> = token ? { Authorization: `Bearer ${token}` } : {};
+
     try {
         response = await fetch(
             `${API_URL}${endpoint}`,
@@ -35,6 +38,7 @@ async function request<T>(
                 credentials: "include",
                 headers: {
                     "Content-Type": "application/json",
+                    ...authHeaders,
                     ...(options.headers || {}),
                 },
             }

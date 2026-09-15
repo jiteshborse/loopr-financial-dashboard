@@ -21,7 +21,11 @@ export const requireAuth: RequestHandler = (
     next: NextFunction
 ): void => {
     try {
-        const token = req.cookies?.accessToken;
+        let token = req.cookies?.accessToken;
+
+        if (!token && req.headers.authorization?.startsWith("Bearer ")) {
+            token = req.headers.authorization.slice(7).trim();
+        }
 
         if (!token) {
             res.status(401).json({
