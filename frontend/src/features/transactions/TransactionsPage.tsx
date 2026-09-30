@@ -48,7 +48,7 @@ export default function TransactionsPage() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
 
-    const pageSize = 25;
+    const pageSize = 50;
 
     const loadTransactions = useCallback(async () => {
         try {
